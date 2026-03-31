@@ -1,5 +1,4 @@
 using System.Text;
-using Caesura.Api.Helpers;
 using Caesura.Api.Middleware;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -60,7 +59,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
-        opts.JsonSerializerOptions.PropertyNamingPolicy = new SnakeCaseNamingPolicy();
+        opts.JsonSerializerOptions.PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance;
         opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 
         // Skip null fields entirely in res

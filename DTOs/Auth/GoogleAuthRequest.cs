@@ -1,4 +1,4 @@
-﻿namespace Caesura.Api.DTOs;
+﻿namespace Caesura.Api.DTOs.Auth;
 
 public class GoogleAuthRequest
 {

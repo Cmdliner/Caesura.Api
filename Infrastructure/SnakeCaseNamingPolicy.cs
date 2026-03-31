@@ -1,10 +1,12 @@
 ﻿using System.Text;
 using System.Text.Json;
 
-namespace Caesura.Api.Helpers;
+namespace Caesura.Api.Infrastructure;
 
 public sealed class SnakeCaseNamingPolicy: JsonNamingPolicy
 {
+    public static readonly SnakeCaseNamingPolicy Instance = new();
+
     public override string ConvertName(string name)
     {
         var result = new StringBuilder();
