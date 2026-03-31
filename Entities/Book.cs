@@ -22,6 +22,6 @@ public record Book
     public ICollection<BookAuthor> BookAuthors { get; set; } = [];
     public ICollection<BookGenre> BookGenres { get; set; } = [];
     public ICollection<BookRating> BookRatings { get; set; } = [];
-    public ICollection<UserLibrary> LibraryEntries { get; set; } = [];
+    public ICollection<UserLibrary> UserLibraries  { get; set; } = [];
     
 }

@@ -4,9 +4,10 @@ public record ReadingProgress
 {
     public int Id { get; set; }
     public Guid UserId { get; set; }
+    public Guid BookId { get; set; }
     public Guid ChapterId { get; set; }
     public int ScrollPosition { get; set; } //Scroll position as int percentage
-    public DateTime lastReadAt { get; set; }
+    public DateTime LastReadAt { get; set; }
 
     public User User { get; set; } = null!;
     public Book Book { get; set; } = null!;

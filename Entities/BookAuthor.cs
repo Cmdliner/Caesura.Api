@@ -1,4 +1,4 @@
-﻿namespace Caesura.Api;
+﻿namespace Caesura.Api.Entities;
 
 public record BookAuthor
 {

@@ -18,5 +18,14 @@ public record User
 
     public DateTime UpdatedAt { get; set; }
 
-    public ICollection<User> Accounts { get; set; } = [];
+    public ICollection<Account> Accounts { get; set; } = [];
+    public ICollection<Book> Books { get; set; } = [];
+    public ICollection<UserLibrary> UserLibraries { get; set; } = [];
+    public ICollection<ReadingProgress> ReadingProgresses { get; set; } = [];
+    public ICollection<Bookmark> Bookmarks { get; set; } = [];
+    public ICollection<BookRating> BookRatings { get; set; } = [];
+    public ICollection<InlineComment> InlineComments { get; set; } = [];
+    public ICollection<Follow> FollowerFollows { get; set; } = [];   // rows where this user IS the follower
+    public ICollection<Follow> FollowingFollows { get; set; } = [];  // rows where this user IS being followed
+    
 }
