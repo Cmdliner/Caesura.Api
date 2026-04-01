@@ -7,22 +7,26 @@ namespace Caesura.Api.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 public class AuthController(
-    IAuthService authService, 
+    IAuthService authService,
     IValidator<RegisterRequest> registerValidator,
     IValidator<LoginRequest> loginValidator,
-    IValidator<GoogleAuthRequest> googleValidator): ControllerBase
+    IValidator<GoogleAuthRequest> googleValidator) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly IValidator<RegisterRequest> _registerValidator = registerValidator;
+    private readonly IValidator<LoginRequest> _loginValidator = loginValidator;
+    private readonly IValidator<GoogleAuthRequest> _googleValidator = googleValidator;
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request) 
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var check = await this.ValidateAsync(registerValidator, request);
+        
+        var check = await this.ValidateAsync(_registerValidator, request);
         if (check is not null) return check;
 
         try
         {
-            var response = await authService.RegisterAsync(request);
+            var response = await _authService.RegisterAsync(request);
             return CreatedAtAction(nameof(Register), response);
         }
         catch (InvalidOperationException ex)
@@ -32,9 +36,14 @@ public class AuthController(
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request) 
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var check = await this.ValidateAsync(loginValidator, request);
+        if (request is null)
+        {
+            return BadRequest(new { error = "Request body is required." });
+        }
+
+        var check = await this.ValidateAsync(_loginValidator, request);
         if (check is not null) return check;
 
         try
@@ -51,12 +60,17 @@ public class AuthController(
     [HttpPost("google")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleAuthRequest request)
     {
-        var check = await this.ValidateAsync(googleValidator, request);
-        if(check is not null) return check;
+        if (request is null)
+        {
+            return BadRequest(new { error = "Request body is required." });
+        }
+
+        var check = await this.ValidateAsync(_googleValidator, request);
+        if (check is not null) return check;
 
         try
         {
-            var result = this._authService.GoogleLoginAsync(request);
+            var result = await _authService.GoogleLoginAsync(request);
             return Ok(result);
         }
         catch (Exception e)

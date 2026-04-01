@@ -2,8 +2,8 @@
 
 public class InlineCommentRequest
 {
-    public int FromPos { get; set; }        // ProseMirror character offset start
-    public int ToPos { get; set; }          // ProseMirror character offset end
-    public string QuoteText { get; set; } = null!;  // snapshot of highlighted text
-    public string Content { get; set; } = null!;
+    public int FromPos { get; set; }
+    public int ToPos { get; set; }
+    public string? QuoteText { get; set; }
+    public string? Content { get; set; }
 }

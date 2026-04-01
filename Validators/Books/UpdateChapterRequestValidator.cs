@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using System.Text.Json;
 
 namespace Caesura.Api.Validators.Books;
 
@@ -11,7 +12,7 @@ public class UpdateChapterRequestValidator : AbstractValidator<UpdateChapterRequ
             .When(x => x.Title is not null);
  
         RuleFor(x => x.Content)
-            .Must(c => BeValidProseMirrorDoc(c!.Value))
+            .Must(c => BeValidProseMirrorDoc(c))
             .WithMessage("Content must be a valid ProseMirror document.")
             .When(x => x.Content.HasValue);
  
@@ -29,14 +30,16 @@ public class UpdateChapterRequestValidator : AbstractValidator<UpdateChapterRequ
             .When(x => x.Status is not null);
     }
  
-    private static bool BeValidProseMirrorDoc(System.Text.Json.JsonElement content)
+    private static bool BeValidProseMirrorDoc(JsonElement? content)
     {
         try
         {
-            if (content.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
-            if (!content.TryGetProperty("type", out var type)) return false;
+            if (!content.HasValue) return false;
+            var doc = content.Value;
+            if (doc.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
+            if (!doc.TryGetProperty("type", out var type)) return false;
             if (type.GetString() != "doc") return false;
-            if (!content.TryGetProperty("content", out var arr)) return false;
+            if (!doc.TryGetProperty("content", out var arr)) return false;
             return arr.ValueKind == System.Text.Json.JsonValueKind.Array;
         }
         catch { return false; }

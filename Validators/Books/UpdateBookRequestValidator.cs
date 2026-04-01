@@ -11,7 +11,7 @@ public class UpdateBookRequestValidator : AbstractValidator<UpdateBookRequest>
         RuleFor(x => x.Title)
             .MinimumLength(1).WithMessage("Title cannot be empty.")
             .MaximumLength(200).WithMessage("Title must not exceed 200 characters.")
-            .Must(t => !string.IsNullOrWhiteSpace(t)).WithMessage("Title cannot be whitespace only.")
+            .Must(t => t != null && !string.IsNullOrWhiteSpace(t)).WithMessage("Title cannot be whitespace only.")
             .When(x => x.Title is not null);
  
         RuleFor(x => x.Description)

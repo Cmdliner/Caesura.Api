@@ -2,6 +2,6 @@
 
 public class RateBookRequest
 {
-    public short Rating { get; set; }       // 1–5
+    public short Rating { get; set; }
     public string? Review { get; set; }
 }

@@ -27,6 +27,6 @@ public class InlineCommentRequestValidator : AbstractValidator<InlineCommentRequ
             .NotEmpty().WithMessage("Comment content is required.")
             .MinimumLength(1).WithMessage("Comment cannot be empty.")
             .MaximumLength(2000).WithMessage("Comment must not exceed 2000 characters.")
-            .Must(c => !string.IsNullOrWhiteSpace(c)).WithMessage("Comment cannot be whitespace only.");
+            .Must(c => c != null && !string.IsNullOrWhiteSpace(c)).WithMessage("Comment cannot be whitespace only.");
     }
 }

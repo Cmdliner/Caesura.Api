@@ -18,7 +18,7 @@ public class RegisterRequestValidator: AbstractValidator<RegisterRequest>
             .Matches(@"^[a-zA-Z0-9_]+$")
             .WithMessage("Username may only contain letters, numbers, and underscores.")
             // Prevent reserved or confusing usernames
-            .Must(u => !ReservedUsernames.Contains(u.ToLower()))
+            .Must(u => u != null && !ReservedUsernames.Contains(u.ToLower()))
             .WithMessage("That username is not available.");
  
         RuleFor(x => x.Password)

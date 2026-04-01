@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using System.Text.Json;
 
 namespace Caesura.Api.Validators.Books;
 
@@ -15,6 +16,7 @@ public class CreateChapterRequestValidator : AbstractValidator<CreateChapterRequ
             .When(x => x.Title is not null);
  
         RuleFor(x => x.Content)
+            .NotEmpty().WithMessage("Content is required.")
             .Must(BeValidProseMirrorDoc)
             .WithMessage("Content must be a valid ProseMirror document with a 'doc' type.");
  
@@ -29,18 +31,21 @@ public class CreateChapterRequestValidator : AbstractValidator<CreateChapterRequ
  
         RuleFor(x => x.Status)
             .Must(s => s == "draft" || s == "published")
-            .WithMessage("Status must be 'draft' or 'published'.");
+            .WithMessage("Status must be 'draft' or 'published'.")
+            .When(x => x.Status is not null);
     }
  
-    private static bool BeValidProseMirrorDoc(System.Text.Json.JsonElement content)
+    private static bool BeValidProseMirrorDoc(JsonElement? content)
     {
         try
         {
-            // A valid ProseMirror doc must have { "type": "doc", "content": [...] }
-            if (content.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
-            if (!content.TryGetProperty("type", out var type)) return false;
+            if (!content.HasValue) return false;
+            var doc = content.Value;
+            if (doc.ValueKind == System.Text.Json.JsonValueKind.Undefined) return false;
+            if (doc.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
+            if (!doc.TryGetProperty("type", out var type)) return false;
             if (type.GetString() != "doc") return false;
-            if (!content.TryGetProperty("content", out var contentArr)) return false;
+            if (!doc.TryGetProperty("content", out var contentArr)) return false;
             return contentArr.ValueKind == System.Text.Json.JsonValueKind.Array;
         }
         catch

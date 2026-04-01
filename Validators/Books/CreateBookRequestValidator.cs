@@ -13,7 +13,7 @@ public class CreateBookRequestValidator : AbstractValidator<CreateBookRequest>
             .NotEmpty().WithMessage("Title is required.")
             .MinimumLength(1).WithMessage("Title cannot be empty.")
             .MaximumLength(200).WithMessage("Title must not exceed 200 characters.")
-            .Must(t => !string.IsNullOrWhiteSpace(t))
+            .Must(t => t != null && !string.IsNullOrWhiteSpace(t))
             .WithMessage("Title cannot be whitespace only.");
  
         RuleFor(x => x.Description)
@@ -27,8 +27,8 @@ public class CreateBookRequestValidator : AbstractValidator<CreateBookRequest>
             .When(x => x.CoverUrl is not null);
  
         RuleFor(x => x.Language)
+            .NotEmpty().WithMessage("Language is required.")
             .Must(lang => SupportedLanguages.Contains(lang.ToLower()))
-            .WithMessage($"Language must be one of: {string.Join(", ", SupportedLanguages)}.")
-            .When(x => x.Language is not null);
+            .WithMessage($"Language must be one of: {string.Join(", ", SupportedLanguages)}.");
     }
 }

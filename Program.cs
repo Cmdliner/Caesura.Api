@@ -1,5 +1,6 @@
 using System.Text;
 using Caesura.Api.Middleware;
+using Caesura.Api.Validators.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
-builder.Services.AddControllers();
 
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 {
@@ -45,27 +45,55 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 
 
 // SERVICES
-// builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 // builder.Services.AddScoped<BooksService>();
 
 // Register fluent validator
-// builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
-// Disable the built-in [Required] / data annotation validation filter
-// so FluentValidation is the single source of truth for all validation errors
+// Suppress the built-in model state filter; FluentValidation handles everything.
+// IMPORTANT: We still handle null bodies explicitly in ValidateAsync<T>.
 builder.Services.Configure<ApiBehaviorOptions>(options =>
-    options.SuppressModelStateInvalidFilter = true);
+{
+    options.SuppressModelStateInvalidFilter = true;
+
+    // When the body cannot be read at all (wrong Content-Type, completely empty),
+    // ASP.NET Core calls this factory. We return a clean 400.
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .ToDictionary(
+                kvp => SnakeCaseNamingPolicy.Instance.ConvertName(kvp.Key),
+                kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+            );
+
+        // If there are no field-level errors, the body itself was unreadable
+        if (errors.Count == 0)
+        {
+            return new BadRequestObjectResult(new
+            {
+                error = "Request body is missing or malformed. Ensure Content-Type is application/json."
+            });
+        }
+
+        return new UnprocessableEntityObjectResult(new
+        {
+            error = "Validation failed.",
+            errors
+        });
+    };
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance;
         opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-
-        // Skip null fields entirely in res
         opts.JsonSerializerOptions.DefaultIgnoreCondition =
             System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-        opts.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        opts.JsonSerializerOptions.Encoder =
+            System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
 // SWagger
@@ -81,7 +109,6 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         In = ParameterLocation.Header
     });
-  
 });
 
 var app = builder.Build();

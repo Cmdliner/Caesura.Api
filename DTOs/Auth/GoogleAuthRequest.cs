@@ -2,5 +2,5 @@
 
 public class GoogleAuthRequest
 {
-    public string IdToken { get; set; }
+    public string? IdToken { get; set; }
 }
