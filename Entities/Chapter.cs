@@ -15,7 +15,7 @@ public class Chapter
     public string? ContentHtml { get; set; } // Cached HTML that is generated at publish time
     public int? WordCount { get; set; }
     public string Status { get; set; } = "draft"; // "published"| draft
-    public DateTime PublishedAt { get; set; }
+    public DateTime? PublishedAt { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
 

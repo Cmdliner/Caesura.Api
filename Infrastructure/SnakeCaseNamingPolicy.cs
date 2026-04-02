@@ -13,7 +13,7 @@ public sealed class SnakeCaseNamingPolicy: JsonNamingPolicy
 
         foreach (var c in name)
         {
-            if(char.IsUpper(c) && result.Length > 0) result.Append("_");   
+            if(char.IsUpper(c) && result.Length > 0) result.Append('_');   
             result.Append(char.ToLower(c));
         }
         return result.ToString();

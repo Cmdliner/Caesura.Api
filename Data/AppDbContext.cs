@@ -3,7 +3,7 @@ using Caesura.Api.Entities;
 
 namespace Caesura.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Account> Accounts => Set<Account>();
@@ -18,8 +18,6 @@ public class AppDbContext : DbContext
     public DbSet<InlineComment> InlineComments => Set<InlineComment>();
     public DbSet<BookRating> BookRatings => Set<BookRating>();
     public DbSet<Follow> Follows => Set<Follow>();
-
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

@@ -40,12 +40,15 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 
     policy.WithOrigins(origins)
         .AllowAnyHeader()
-        .AllowAnyMethod();
+        .AllowAnyMethod()
+        .AllowCredentials(); // Required for authenticated requests with Bearer tokens
 }));
 
 
 // SERVICES
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<BooksService>();
+
 // builder.Services.AddScoped<BooksService>();
 
 // Register fluent validator
