@@ -91,7 +91,7 @@ public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
                     Audience = [config["Google:ClientId"]],
                 });
         }
-        catch (Exception e)
+        catch (Exception _)
         {
             throw new UnauthorizedAccessException("Invalid Google token");
         }

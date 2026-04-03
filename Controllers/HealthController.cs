@@ -1,6 +1,14 @@
-﻿namespace Caesura.Api.Controllers;
+﻿using Microsoft.AspNetCore.Mvc;
 
-public class HealthController
+namespace Caesura.Api.Controllers;
+
+[ApiController()]
+[Route("api/v1/health")]
+public class HealthController: ControllerBase
 {
-    
+    [HttpGet()]
+    public IActionResult GetHealth()
+    {
+        return Ok(new { status = "healthy" });
+    }
 }
