@@ -25,7 +25,9 @@ public class BooksService(AppDbContext db)
                 Language = b.Language,
                 Status = b.Status,
                 TotalViews = b.TotalViews,
-                CreatedAt = b.CreatedAt
+                CreatedAt = b.CreatedAt,
+                AuthorName = b.Author != null ? b.Author.DisplayName : null,
+                Authors = b.BookAuthors.Select(ba => ba.AuthorName).ToList(),
             })
             .ToListAsync();
 
