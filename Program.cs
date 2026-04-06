@@ -47,6 +47,7 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 
 // SERVICES
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<BooksService>();
 
 // builder.Services.AddScoped<BooksService>();

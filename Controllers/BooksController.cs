@@ -47,7 +47,13 @@ public class BooksController(
         if (check is not null) return check;
 
         var book = await books.CreateBookAsync(UserId, request);
-        return CreatedAtAction(nameof(GetBook), new { slug = book.Slug }, new { book });
+        var response = new CreateBookResponse
+        {
+            BookId = book.Id,
+            Title = book.Title
+        };
+    
+        return CreatedAtAction(nameof(GetBook), new { slug = book.Slug }, response);
     }
 
     [HttpPatch("{id:guid}"), Authorize]

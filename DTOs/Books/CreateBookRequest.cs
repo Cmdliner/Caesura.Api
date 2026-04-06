@@ -6,4 +6,6 @@ public class CreateBookRequest
     public string? Description { get; set; }
     public string? CoverUrl { get; set; }
     public string Language { get; set; } = "en";
+    public List<string>? Authors { get; set; }
+    public List<int>? GenreIds { get; set; }
 }

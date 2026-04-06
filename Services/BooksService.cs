@@ -104,6 +104,60 @@ public class BooksService(AppDbContext db)
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
+        var authorNames = (req.Authors ?? [])
+            .Select(a => a.Trim())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Always create at least one BookAuthor row for user-created books.
+        if (authorNames.Count == 0)
+        {
+            var owner = await db.Users
+                .Where(u => u.Id == authorId)
+                .Select(u => new { u.DisplayName, u.Username })
+                .FirstOrDefaultAsync();
+
+            var fallbackAuthorName = owner is null
+                ? "Unknown Author"
+                : !string.IsNullOrWhiteSpace(owner.DisplayName)
+                    ? owner.DisplayName!
+                    : owner.Username;
+
+            authorNames.Add(fallbackAuthorName);
+        }
+
+        var genreIds = (req.GenreIds ?? [])
+            .Distinct()
+            .ToList();
+
+        if (genreIds.Count > 0)
+        {
+            var existingGenreIds = await db.Genres
+                .Where(g => genreIds.Contains(g.Id))
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            foreach (var genreId in existingGenreIds)
+            {
+                book.BookGenres.Add(new BookGenre
+                {
+                    BookId = book.Id,
+                    GenreId = genreId
+                });
+            }
+        }
+
+        foreach (var authorName in authorNames)
+        {
+            book.BookAuthors.Add(new BookAuthor
+            {
+                BookId = book.Id,
+                AuthorName = authorName
+            });
+        }
+
         db.Books.Add(book);
         await db.SaveChangesAsync();
         return book;
