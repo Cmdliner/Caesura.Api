@@ -228,6 +228,20 @@ public class BooksService(AppDbContext db)
         return chapter;
     }
 
+    public async Task<bool> DeleteChapterAsync(Guid bookId, Guid chapterId, Guid userId)
+    {
+        var owned = await db.Books.AnyAsync(b => b.Id == bookId && b.AuthorId == userId);
+        if (!owned) return false;
+
+        var chapter = await db.Chapters
+            .FirstOrDefaultAsync(c => c.Id == chapterId && c.BookId == bookId);
+        if (chapter is null) return false;
+
+        db.Chapters.Remove(chapter);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<Chapter?> UpdateChapterAsync(Guid bookId, Guid chapterId, Guid userId, UpdateChapterRequest req)
     {
         var owned = await db.Books

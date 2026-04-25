@@ -1,14 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Caesura.Api.Controllers;
 
-[ApiController()]
+/// <summary>Service liveness probe.</summary>
+[ApiController]
 [Route("api/v1/health")]
-public class HealthController: ControllerBase
+[Produces("application/json")]
+[Tags("Health")]
+public class HealthController : ControllerBase
 {
-    [HttpGet()]
-    public IActionResult GetHealth()
-    {
-        return Ok(new { status = "healthy" });
-    }
+    /// <summary>Returns 200 OK when the service is running.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public IActionResult GetHealth() => Ok(new { status = "healthy" });
 }

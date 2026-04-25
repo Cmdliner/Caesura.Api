@@ -6,26 +6,30 @@ public interface IUserService
 {
     public Task<IEnumerable<AuthoredBooksResponse>> GetAuthoredBooks(Guid userId);
     public Task<BookDetailResponse?> GetBookBySlugAsync(string slug, Guid userId);
+    public Task<ChapterDetailResponse?> GetChapterForEditAsync(Guid bookId, Guid userId, int chapterNumber);
 }
 
 public class UserService(AppDbContext db) : IUserService
 {
     public async Task<IEnumerable<AuthoredBooksResponse>> GetAuthoredBooks(Guid userId)
     {
-        var authoredBooks = await db.BookAuthors
-            .Where(ba => ba.Book.AuthorId == userId)
-            .Select(ba => new AuthoredBooksResponse
+        return await db.Books
+            .Where(b => b.AuthorId == userId)
+            .Select(b => new AuthoredBooksResponse
             {
-                Id = ba.Book.Id,
-                Slug = ba.Book.Slug,
-                Description = ba.Book.Description,
-                Title = ba.Book.Title,
-                Status = ba.Book.Status,
-                CreatedAt = ba.Book.CreatedAt,
-                CoverUrl = ba.Book.CoverUrl,
+                Id = b.Id,
+                Slug = b.Slug,
+                Description = b.Description,
+                Title = b.Title,
+                Status = b.Status,
+                CreatedAt = b.CreatedAt,
+                UpdatedAt = b.UpdatedAt,
+                CoverUrl = b.CoverUrl,
+                ChapterCount = b.Chapters.Count(),
+                TotalWordCount = b.Chapters.Sum(c => c.WordCount ?? 0),
             })
+            .OrderByDescending(b => b.UpdatedAt)
             .ToListAsync();
-        return authoredBooks;
     }
 
     public async Task<BookDetailResponse?> GetBookBySlugAsync(string slug, Guid userId)
@@ -67,6 +71,29 @@ public class UserService(AppDbContext db) : IUserService
                 WordCount = c.WordCount,
                 PublishedAt = c.PublishedAt
             }).ToList()
+        };
+    }
+
+    public async Task<ChapterDetailResponse?> GetChapterForEditAsync(Guid bookId, Guid userId, int chapterNumber)
+    {
+        var chapter = await db.Chapters
+            .FirstOrDefaultAsync(c =>
+                c.BookId == bookId &&
+                c.ChapterNumber == chapterNumber &&
+                c.Book.AuthorId == userId);
+
+        if (chapter is null) return null;
+
+        return new ChapterDetailResponse
+        {
+            Id = chapter.Id,
+            BookId = chapter.BookId,
+            ChapterNumber = chapter.ChapterNumber,
+            Title = chapter.Title,
+            Content = chapter.Content,
+            ContentHtml = chapter.ContentHtml,
+            WordCount = chapter.WordCount,
+            PublishedAt = chapter.PublishedAt
         };
     }
 }

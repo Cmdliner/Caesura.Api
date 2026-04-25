@@ -1,4 +1,5 @@
 using System.Text;
+using Caesura.Api.Infrastructure.OpenApi;
 using Caesura.Api.Middleware;
 using Caesura.Api.Validators.Auth;
 using FluentValidation;
@@ -7,15 +8,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Default");
 var jwtSecret = builder.Configuration["Jwt:Secret"] ??
                 throw new InvalidOperationException("Jwt:Secret is not configured");
 
-
-// Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -36,23 +37,31 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 {
     var origins = builder.Configuration
         .GetSection("AllowedOrigins")
-        .Get<String[]>() ?? ["http://localhost:3000"];
+        .Get<string[]>() ?? ["http://localhost:3000"];
 
     policy.WithOrigins(origins)
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials(); // Required for authenticated requests with Bearer tokens
+        .AllowCredentials();
 }));
 
+// ── HTTP JSON options (used by OpenAPI schema generator) ─────────────────────
+// Must mirror the MVC JsonOptions so the generated schema reflects snake_case
+// field names rather than the C# PascalCase property names.
+builder.Services.ConfigureHttpJsonOptions(opts =>
+{
+    opts.SerializerOptions.PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance;
+    opts.SerializerOptions.PropertyNameCaseInsensitive = true;
+    opts.SerializerOptions.DefaultIgnoreCondition =
+        System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    opts.SerializerOptions.Encoder =
+        System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+});
 
-// SERVICES
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<BooksService>();
 
-// builder.Services.AddScoped<BooksService>();
-
-// Register fluent validator
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
 // Suppress the built-in model state filter; FluentValidation handles everything.
@@ -61,8 +70,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
 
-    // When the body cannot be read at all (wrong Content-Type, completely empty),
-    // ASP.NET Core calls this factory. We return a clean 400.
     options.InvalidModelStateResponseFactory = context =>
     {
         var errors = context.ModelState
@@ -72,7 +79,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
                 kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
             );
 
-        // If there are no field-level errors, the body itself was unreadable
         if (errors.Count == 0)
         {
             return new BadRequestObjectResult(new
@@ -100,29 +106,60 @@ builder.Services.AddControllers()
             System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
-// SWagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+// ── OpenAPI (native .NET 10, served at /openapi/v1.json) ─────────────────────
+builder.Services.AddOpenApi(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Caesura API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
+
+    // Document-level metadata
+    options.AddDocumentTransformer((document, _, _) =>
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header
+        document.Info = new OpenApiInfo
+        {
+            Title = "Caesura API",
+            Version = "v1",
+            Description = "REST API for the Caesura book-reading platform. " +
+                          "Authenticate with a JWT Bearer token to access protected endpoints.",
+            Contact = new OpenApiContact
+            {
+                Name = "Caesura",
+                Url = new Uri("https://caesura.app")
+            },
+            License = new OpenApiLicense
+            {
+                Name = "MIT"
+            }
+        };
+        return Task.CompletedTask;
     });
+
+    // Register the JWT Bearer security scheme on the document
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+
+    // Attach the security requirement to every [Authorize] operation
+    options.AddOperationTransformer<AuthorizeOperationTransformer>();
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    // Serve the raw OpenAPI JSON at /openapi/v1.json
+    app.MapOpenApi();
+
+    // Scalar interactive UI at /scalar
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "Caesura API";
+        options.Theme = ScalarTheme.Default;
+        options.DefaultHttpClient = new(ScalarTarget.Http, ScalarClient.Http11);
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["Bearer"]
+        };
+    });
 }
 
 app.UseCors("Frontend");
