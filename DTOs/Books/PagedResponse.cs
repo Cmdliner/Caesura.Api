@@ -6,5 +6,6 @@ public class PagedResponse<T>
     public int Page { get; set; }
     public int Limit { get; set; }
     public int Total { get; set; }
-    public bool HasMore => (Page * Limit) < Total;
+    public int TotalPages => Limit > 0 ? (int)Math.Ceiling((double)Total / Limit) : 0;
+    public bool HasMore => Page < TotalPages;
 }

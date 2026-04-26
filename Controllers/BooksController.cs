@@ -40,6 +40,20 @@ public class BooksController(
         return Ok(await books.ListBooksAsync(page));
     }
 
+    /// <summary>Search published books by title, description, or author name.</summary>
+    /// <param name="q">Search query (minimum 2 characters).</param>
+    /// <response code="200">List of matching books (max 12).</response>
+    [HttpGet("search")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchBooks([FromQuery] string? q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            return Ok(new { results = Array.Empty<object>() });
+
+        var results = await books.SearchBooksAsync(q.Trim());
+        return Ok(new { results });
+    }
+
     /// <summary>Get a single book by its URL slug.</summary>
     /// <param name="slug">URL-safe book identifier.</param>
     /// <response code="200">Book detail with chapters list.</response>
@@ -169,6 +183,17 @@ public class BooksController(
         return chapter is null
             ? NotFound(new { error = "Chapter not found." })
             : Ok(new { chapter });
+    }
+
+    /// <summary>Permanently delete a book and all its chapters. Only the author may call this.</summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteBook(Guid id)
+    {
+        var deleted = await books.DeleteBookAsync(id, UserId);
+        return deleted ? NoContent() : NotFound(new { error = "Book not found or you are not the author." });
     }
 
     /// <summary>Delete a chapter. Only the book author may call this.</summary>

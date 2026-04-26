@@ -163,6 +163,17 @@ public class BooksService(AppDbContext db)
         return book;
     }
 
+    public async Task<bool> DeleteBookAsync(Guid bookId, Guid userId)
+    {
+        var book = await db.Books
+            .FirstOrDefaultAsync(b => b.Id == bookId && b.AuthorId == userId);
+        if (book is null) return false;
+
+        db.Books.Remove(book);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<Book?> UpdateBookAsync(Guid bookId, Guid userId, UpdateBookRequest req)
     {
         var book = await db.Books
@@ -170,7 +181,11 @@ public class BooksService(AppDbContext db)
 
         if (book is null) return null;
 
-        if (req.Title is not null) book.Title = req.Title;
+        if (req.Title is not null)
+        {
+            book.Title = req.Title;
+            book.Slug = Slugify(req.Title) + "-" + Guid.NewGuid().ToString()[..5];
+        }
         if (req.Description is not null) book.Description = req.Description;
         if (req.CoverUrl is not null) book.CoverUrl = req.CoverUrl;
         if (req.Status is not null) book.Status = req.Status;
@@ -466,6 +481,33 @@ public class BooksService(AppDbContext db)
             AverageRating = Math.Round(stats.Avg, 1),
             TotalRatings = stats.Count
         };
+    }
+
+    public async Task<List<BookSummaryResponse>> SearchBooksAsync(string query, int limit = 12)
+    {
+        var q = query.Trim().ToLower();
+        return await db.Books
+            .Where(b => b.Status == "published" &&
+                (b.Title.ToLower().Contains(q) ||
+                 (b.Description != null && b.Description.ToLower().Contains(q)) ||
+                 b.BookAuthors.Any(ba => ba.AuthorName.ToLower().Contains(q))))
+            .OrderByDescending(b => b.TotalViews)
+            .Take(limit)
+            .Select(b => new BookSummaryResponse
+            {
+                Id = b.Id,
+                Title = b.Title,
+                Slug = b.Slug,
+                Description = b.Description,
+                CoverUrl = b.CoverUrl,
+                Language = b.Language,
+                Status = b.Status,
+                TotalViews = b.TotalViews,
+                CreatedAt = b.CreatedAt,
+                AuthorName = b.Author != null ? b.Author.DisplayName : null,
+                Authors = b.BookAuthors.Select(ba => ba.AuthorName).ToList(),
+            })
+            .ToListAsync();
     }
 
     private static string Slugify(string text) =>
