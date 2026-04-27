@@ -15,6 +15,7 @@ public class BookDetailResponse
     public AuthorResponse? Author { get; set; }         // null for Gutenberg books
     public List<string> GutenbergAuthors { get; set; } = [];  // for Gutenberg books
     public List<ChapterSummaryResponse> Chapters { get; set; } = [];
+    public List<string> Genres { get; set; } = [];
 }
 
 public class AuthorResponse

@@ -13,4 +13,5 @@ public class BookSummaryResponse
     public string Status { get; set; } = null!;
     public int TotalViews { get; set; }
     public DateTime CreatedAt { get; set; }
+    public List<string> Genres { get; set; } = [];
 }

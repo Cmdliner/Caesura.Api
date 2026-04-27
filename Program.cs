@@ -61,6 +61,7 @@ builder.Services.ConfigureHttpJsonOptions(opts =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<BooksService>();
+builder.Services.AddScoped<GenresService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
@@ -141,6 +142,24 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+// ── Seed default genres on first run ─────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (!await db.Genres.AnyAsync())
+    {
+        string[] defaultGenres =
+        [
+            "Fantasy", "Science Fiction", "Mystery", "Romance", "Thriller",
+            "Horror", "Historical Fiction", "Literary Fiction", "Adventure",
+            "Non-Fiction", "Biography", "Self-Help", "Poetry", "Children's",
+        ];
+        foreach (var name in defaultGenres)
+            db.Genres.Add(new Genre { Name = name });
+        await db.SaveChangesAsync();
+    }
+}
 
 app.UseMiddleware<ExceptionMiddleware>();
 

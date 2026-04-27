@@ -28,6 +28,7 @@ public class BooksService(AppDbContext db)
                 CreatedAt = b.CreatedAt,
                 AuthorName = b.Author != null ? b.Author.DisplayName : null,
                 Authors = b.BookAuthors.Select(ba => ba.AuthorName).ToList(),
+                Genres = b.BookGenres.Select(bg => bg.Genre.Name).ToList(),
             })
             .ToListAsync();
 
@@ -42,6 +43,7 @@ public class BooksService(AppDbContext db)
         var book = await db.Books
             .Include(b => b.Author)
             .Include(b => b.BookAuthors)
+            .Include(b => b.BookGenres).ThenInclude(bg => bg.Genre)
             .Include(b => b.Chapters
                 .Where(c => c.Status == "published")
                 .OrderBy(c => c.ChapterNumber))
@@ -76,6 +78,7 @@ public class BooksService(AppDbContext db)
                     AvatarUrl = book.Author.AvatarUrl
                 },
             GutenbergAuthors = book.BookAuthors.Select(ba => ba.AuthorName).ToList(),
+            Genres = book.BookGenres.Select(bg => bg.Genre.Name).ToList(),
             Chapters = book.Chapters.Select(c => new ChapterSummaryResponse
             {
                 Id = c.Id,
@@ -177,6 +180,7 @@ public class BooksService(AppDbContext db)
     public async Task<Book?> UpdateBookAsync(Guid bookId, Guid userId, UpdateBookRequest req)
     {
         var book = await db.Books
+            .Include(b => b.BookGenres)
             .FirstOrDefaultAsync(b => b.Id == bookId && b.AuthorId == userId);
 
         if (book is null) return null;
@@ -189,8 +193,19 @@ public class BooksService(AppDbContext db)
         if (req.Description is not null) book.Description = req.Description;
         if (req.CoverUrl is not null) book.CoverUrl = req.CoverUrl;
         if (req.Status is not null) book.Status = req.Status;
-        book.UpdatedAt = DateTime.UtcNow;
 
+        if (req.GenreIds is not null)
+        {
+            db.BookGenres.RemoveRange(book.BookGenres);
+            var validIds = await db.Genres
+                .Where(g => req.GenreIds.Contains(g.Id))
+                .Select(g => g.Id)
+                .ToListAsync();
+            foreach (var id in validIds)
+                db.BookGenres.Add(new BookGenre { BookId = book.Id, GenreId = id });
+        }
+
+        book.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
         return book;
     }
@@ -506,6 +521,7 @@ public class BooksService(AppDbContext db)
                 CreatedAt = b.CreatedAt,
                 AuthorName = b.Author != null ? b.Author.DisplayName : null,
                 Authors = b.BookAuthors.Select(ba => ba.AuthorName).ToList(),
+                Genres = b.BookGenres.Select(bg => bg.Genre.Name).ToList(),
             })
             .ToListAsync();
     }
